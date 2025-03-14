@@ -405,7 +405,10 @@ def cache_vec_divide(tuple_a, tuple_b, ignore_zeros):
     """
     Wraps vec.divide with an lru_cache
     """
-    return vec.divide(tuple_a, tuple_b, ignore_zeros)
+    # dividing the two vectors element by element, avoiding division by zero
+    ret = tuple(x / y if y != 0 else 0 for x, y in zip(tuple_a, tuple_b))
+    return ret
+    # return vec.divide(tuple_a, tuple_b, ignore_zeros)
 
 
 @functools.lru_cache(maxsize=None)
@@ -413,15 +416,36 @@ def cache_vec_mean(tuple_a, ignore_empty):
     """
     Wraps vec.mean with an lru_cache
     """
-    return vec.mean(tuple_a, ignore_empty)
+    count = 0
+    total = 0
+    for val in tuple_a:
+        if ignore_empty:
+            if val == 0 or val is None:
+                continue
+            else:
+                total += val
+                count += 1
+        else:
+            total += val
+            count += 1
+    count = count or 1  # in case t is an empty vector
+    return total / count
+
+    # return vec.mean(tuple_a, ignore_empty)
 
 
 @functools.lru_cache(maxsize=None)
 def _check_dims_parallel(d1: Dimensions, d2: Dimensions) -> bool:
     """
     Returns True if d1 and d2 are parallel vectors. False otherwise.
+
+    Returns True if d1 and d2 are parallel vectors. False otherwise.
+    In other words: linearly dependent vectors.
     """
-    return vec.multiply(d1, vec.dot(d2, d2)) == vec.multiply(d2, vec.dot(d1, d2))
+    d2d2 = sum((x * y) for x, y in zip(d2, d2))
+    d1d2 = sum((x * y) for x, y in zip(d1, d2))
+    return tuple(x * d2d2 for x in d1) == tuple(x * d1d2 for x in d2)
+    # return vec.multiply(d1, vec.dot(d2, d2)) == vec.multiply(d2, vec.dot(d1, d2))
 
 
 def _dims_basis_multiple(dims: Dimensions) -> Optional[Dimensions]:
@@ -564,18 +588,37 @@ def is_nan(value: Any) -> bool:
         return False
 
 
-def fraction_pow(a: float, b: float) -> Union[float, float]:
+# def fraction_pow(a: float, b: float) -> Union[float, float]:
+#     """
+#     Raises 'a' to the power of 'b' with the intention of returning a float
+#     if the result can be expressed as a float. Returns a float otherwise.
+#     """
+#     if isinstance(b, int):
+#         return a**b
+#     else:
+#         c = a**b
+#         if isinstance(c, float):
+#             return 1 / c
+#         x, y = c.as_integer_ratio()
+#         d = Decimal(str(x / y))
+#         m, n = d.as_integer_ratio()
+#         return n / m
+
+
+from fractions import Fraction
+
+def fraction_pow(a: Fraction, b: Fraction) -> Union[Fraction, float]:
     """
-    Raises 'a' to the power of 'b' with the intention of returning a float
-    if the result can be expressed as a float. Returns a float otherwise.
+    Raises 'a' to the power of 'b' with the intention of returning a Fraction
+    if the result can be expressed as a Fraction. Returns a float otherwise.
     """
     if isinstance(b, int):
         return a**b
     else:
         c = a**b
-        if isinstance(c, float):
+        if isinstance(c, Fraction):
             return 1 / c
         x, y = c.as_integer_ratio()
         d = Decimal(str(x / y))
         m, n = d.as_integer_ratio()
-        return n / m
+        return Fraction(n, m)

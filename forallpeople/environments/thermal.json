@@ -27,14 +27,14 @@
     "bar": {
         "Dimension": [1,-1,-2,0,0,0,0],
         "Value": 1e5,
-        "Factor": "1/1e5"},
+        "Factor": "1e-5"},
     "kg_kmol": {
         "Dimension": [1,0,0,0,0,0,-1],
-        "Factor": "1/1000",
+        "Factor": "1e-3",
         "Symbol": "kg·kmol⁻¹"},
     "g_mol": {
         "Dimension": [1,0,0,0,0,0,-1],
-        "Factor": "1/1000",
+        "Factor": "1e-3",
         "Symbol": "g·mol⁻¹"},
     "J_kg_K": {
         "Dimension": [0,2,-2,0,0,-1,0],
@@ -53,25 +53,5 @@
         "Value": 1e-6},
     "m2_s": {
         "Dimension": [0,2,-1,0,0,0,0],
-        "Symbol": "m²*s⁻¹"},
-    "kip_ft": {
-        "Dimension": [1,0,-2,0,0,0,0],
-        "Factor": "0.3048/0.45359237/9.80665/1000",
-        "Symbol": "kip/ft"},
-    "kip": {
-        "Dimension": [1,1,-2,0,0,0,0],
-        "Factor": "1/0.45359237/9.80665/1000",
-        "Symbol": "kip"},
-    "lbm": {
-        "Dimension": [1,0,0,0,0,0,0],
-        "Factor": "1/0.45359237",
-        "Symbol": "lbm"},
-    "psi": {
-        "Dimension": [1,-1,-2,0,0,0,0],
-        "Factor": "0.3048**2/12**2/0.45359237/9.80665",
-        "Symbol": "psi"},
-    "ksi": {
-        "Dimension": [1,-1,-2,0,0,0,0],
-        "Factor": "0.3048**2/12**2/0.45359237/9.80665/1000",
-        "Symbol": "ksi"}
-    }
+        "Symbol": "m²*s⁻¹"}
+}

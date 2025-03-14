@@ -35,6 +35,7 @@ from __future__ import annotations
 
 __version__ = "2.7.1"
 
+import pprint
 from typing import Union, Optional
 from forallpeople.dimensions import Dimensions
 import forallpeople.physical_helper_functions as phf
@@ -44,6 +45,9 @@ import math
 import builtins
 import sys
 import warnings
+
+RE_TOL = 1e-9
+ABS_TOL = 1e-12
 
 NUMBER = (int, float)
 
@@ -354,11 +358,21 @@ class Physical(object):
     def __contains__(self, other):
         return False
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def __eq__(self, other):
-        if isinstance(other, NUMBER):
-            return math.isclose(self.value, other)
-        elif type(other) == str:
+        if isinstance(other, str):
             return False
+
+        # comparison between Physical and a zero
+        if isinstance(other, NUMBER) and other == 0:
+            return math.isclose(self.value, 0, rel_tol=RE_TOL)  # todo * factor?
+
+        # comparison: if the Physical is dimensionless, compare the value
+        elif self.dimensions == Dimensions(0, 0, 0, 0, 0, 0, 0):
+            return math.isclose(self.value, other)  # todo * factor?
+
         elif isinstance(other, Physical) and self.dimensions == other.dimensions:
             return math.isclose(self.value, other.value)
         else:
@@ -366,10 +380,60 @@ class Physical(object):
                 "Can only compare between Physical instances of equal dimension."
             )
 
+    # def __eq__(self, other):
+    #     if isinstance(other, NUMBER):
+    #         return math.isclose(self.value, other)
+    #     elif type(other) == str:
+    #         return False
+    #     elif isinstance(other, Physical) and self.dimensions == other.dimensions:
+    #         return math.isclose(self.value, other.value)
+    #     else:
+    #         raise ValueError(
+    #             "Can only compare between Physical instances of equal dimension."
+    #         )
+
+    # def __gt__(self, other):
+    #     if isinstance(other, NUMBER):
+    #         return self.value > other
+    #     elif isinstance(other, Physical) and self.dimensions == other.dimensions:
+    #         return self.value > other.value
+    #     else:
+    #         raise ValueError(
+    #             "Can only compare between Physical instances of equal dimension."
+    #         )
+    #
+    # def __ge__(self, other):
+    #     if isinstance(other, NUMBER):
+    #         return self.value >= other
+    #     elif isinstance(other, Physical) and self.dimensions == other.dimensions:
+    #         return self.value >= other.value
+    #     else:
+    #         raise ValueError(
+    #             "Can only compare between Physical instances of equal dimension."
+    #         )
+    #
+    # def __lt__(self, other):
+    #     if isinstance(other, NUMBER):
+    #         return self.value < other
+    #     elif isinstance(other, Physical) and self.dimensions == other.dimensions:
+    #         return self.value < other.value
+    #     else:
+    #         raise ValueError(
+    #             "Can only compare between Physical instances of equal dimension."
+    #         )
+    #
+    # def __le__(self, other):
+    #     if isinstance(other, NUMBER):
+    #         return self.value <= other
+    #     elif isinstance(other, Physical) and self.dimensions == other.dimensions:
+    #         return self.value <= other.value
+    #     else:
+    #         raise ValueError(
+    #             "Can only compare between Physical instances of equal dimension."
+    #         )
+
     def __gt__(self, other):
-        if isinstance(other, NUMBER):
-            return self.value > other
-        elif isinstance(other, Physical) and self.dimensions == other.dimensions:
+        if isinstance(other, Physical) and self.dimensions == other.dimensions:
             return self.value > other.value
         else:
             raise ValueError(
@@ -377,9 +441,7 @@ class Physical(object):
             )
 
     def __ge__(self, other):
-        if isinstance(other, NUMBER):
-            return self.value >= other
-        elif isinstance(other, Physical) and self.dimensions == other.dimensions:
+        if isinstance(other, Physical) and self.dimensions == other.dimensions:
             return self.value >= other.value
         else:
             raise ValueError(
@@ -387,9 +449,7 @@ class Physical(object):
             )
 
     def __lt__(self, other):
-        if isinstance(other, NUMBER):
-            return self.value < other
-        elif isinstance(other, Physical) and self.dimensions == other.dimensions:
+        if isinstance(other, Physical) and self.dimensions == other.dimensions:
             return self.value < other.value
         else:
             raise ValueError(
@@ -397,9 +457,7 @@ class Physical(object):
             )
 
     def __le__(self, other):
-        if isinstance(other, NUMBER):
-            return self.value <= other
-        elif isinstance(other, Physical) and self.dimensions == other.dimensions:
+        if isinstance(other, Physical) and self.dimensions == other.dimensions:
             return self.value <= other.value
         else:
             raise ValueError(
@@ -407,43 +465,71 @@ class Physical(object):
             )
 
     def __add__(self, other):
-        if other != other:  # Test for nans
-            return other
-        if isinstance(other, Physical):
-            if self.dimensions == other.dimensions:
-                try:
-                    return Physical(
-                        self.value + other.value,
-                        self.dimensions,
-                        self.factor,
-                        self.precision,
-                        self.prefixed,
-                    )
-                except:
-                    raise ValueError(
-                        f"Cannot add between {self} and {other}: "
-                        + ".value attributes are incompatible."
-                    )
-            else:
-                raise ValueError(
-                    f"Cannot add between {self} and {other}: "
-                    + ".dimensions attributes are incompatible (not equal)"
-                )
+
+        # addition to 0 is allowed.
+        # this will not cause any issues (e.g. no value change)
+        # and allows using the sub() method.
+        if isinstance(other, NUMBER) and other == 0:
+            return self
+
+        # only add between Physical instances
+        if not isinstance(other, Physical):
+            raise ValueError('Can only add between Physical instances, these are {} = {} and {} = {}.'.format(type(other), other, type(self), self))
+
+        # check if dimensions are compatible. If so, add them
+        if self.dimensions == other.dimensions:
+            return Physical(
+                self.value + other.value,
+                self.dimensions,
+                self.factor,
+                self.precision,
+                self.prefixed,
+            )
+        # dimensions are not compatible
         else:
-            try:
-                other = other / float(self.factor)
-                return Physical(
-                    self.value + other,
-                    self.dimensions,
-                    self.factor,
-                    self.precision,
-                    self.prefixed,
-                )
-            except:
-                raise ValueError(
-                    f"Cannot add between {self} and {other}: "
-                    + ".value attributes are incompatible."
-                )
+            raise ValueError(
+                f"Cannot add between {self} and {other}: "
+                + ".dimensions attributes are incompatible (not equal)"
+            )
+
+    # def __add__(self, other):
+    #     if other != other:  # Test for nans
+    #         return other
+    #     if isinstance(other, Physical):
+    #         if self.dimensions == other.dimensions:
+    #             try:
+    #                 return Physical(
+    #                     self.value + other.value,
+    #                     self.dimensions,
+    #                     self.factor,
+    #                     self.precision,
+    #                     self.prefixed,
+    #                 )
+    #             except:
+    #                 raise ValueError(
+    #                     f"Cannot add between {self} and {other}: "
+    #                     + ".value attributes are incompatible."
+    #                 )
+    #         else:
+    #             raise ValueError(
+    #                 f"Cannot add between {self} and {other}: "
+    #                 + ".dimensions attributes are incompatible (not equal)"
+    #             )
+    #     else:
+    #         try:
+    #             other = other / float(self.factor)
+    #             return Physical(
+    #                 self.value + other,
+    #                 self.dimensions,
+    #                 self.factor,
+    #                 self.precision,
+    #                 self.prefixed,
+    #             )
+    #         except:
+    #             raise ValueError(
+    #                 f"Cannot add between {self} and {other}: "
+    #                 + ".value attributes are incompatible."
+    #             )
 
     def __radd__(self, other):
         return self.__add__(other)
@@ -455,59 +541,86 @@ class Physical(object):
         )
 
     def __sub__(self, other):
-        if other != other:  # Test for nans
-            return other
-        if isinstance(other, Physical):
-            if self.dimensions == other.dimensions:
-                try:
-                    return Physical(
-                        self.value - other.value,
-                        self.dimensions,
-                        self.factor,
-                        self.precision,
-                        self.prefixed,
-                    )
-                except:
-                    raise ValueError(f"Cannot subtract between {self} and {other}")
-            else:
-                raise ValueError(
-                    f"Cannot subtract between {self} and {other}:"
-                    + ".dimensions attributes are incompatible (not equal)"
-                )
+
+        # subtracting 0 is allowed.
+        if isinstance(other, NUMBER) and other == 0:
+            return self
+
+        if not isinstance(other, Physical):
+            raise ValueError('Can only subtract between Physical instances, these are {} = {} and {} = {}.'.format(type(other), other, type(self), self))
+
+        if self.dimensions == other.dimensions:
+
+            return Physical(
+                self.value - other.value,
+                self.dimensions,
+                self.factor,
+                self.precision,
+                self.prefixed,
+            )
         else:
-            try:
-                other = other / float(self.factor)
-                return Physical(
-                    self.value - other,
-                    self.dimensions,
-                    self.factor,
-                    self.precision,
-                    self.prefixed,
-                )
-            except:
-                raise ValueError(
-                    f"Cannot subtract between {self} and {other}: "
-                    + ".value attributes are incompatible."
-                )
+            raise ValueError(
+                f"Cannot subtract between {self} and {other}: "
+                + ".dimensions attributes are incompatible (not equal)"
+            )
+
+    # def __sub__(self, other):
+    #     if other != other:  # Test for nans
+    #         return other
+    #     if isinstance(other, Physical):
+    #         if self.dimensions == other.dimensions:
+    #             try:
+    #                 return Physical(
+    #                     self.value - other.value,
+    #                     self.dimensions,
+    #                     self.factor,
+    #                     self.precision,
+    #                     self.prefixed,
+    #                 )
+    #             except:
+    #                 raise ValueError(f"Cannot subtract between {self} and {other}")
+    #         else:
+    #             raise ValueError(
+    #                 f"Cannot subtract between {self} and {other}:"
+    #                 + ".dimensions attributes are incompatible (not equal)"
+    #             )
+    #     else:
+    #         try:
+    #             other = other / float(self.factor)
+    #             return Physical(
+    #                 self.value - other,
+    #                 self.dimensions,
+    #                 self.factor,
+    #                 self.precision,
+    #                 self.prefixed,
+    #             )
+    #         except:
+    #             raise ValueError(
+    #                 f"Cannot subtract between {self} and {other}: "
+    #                 + ".value attributes are incompatible."
+    #             )
 
     def __rsub__(self, other):
-        if isinstance(other, Physical):
-            return self.__sub__(other)
-        else:
-            try:
-                other = other / float(self.factor)
-                return Physical(
-                    other - self.value,
-                    self.dimensions,
-                    self.factor,
-                    self.precision,
-                    self.prefixed,
-                )
-            except:
-                raise ValueError(
-                    f"Cannot subtract between {self} and {other}: "
-                    + ".value attributes are incompatible."
-                )
+        return self.__sub__(other)
+
+    # def __rsub__(self, other):
+    #     if isinstance(other, Physical):
+    #         return self.__sub__(other)
+    #     else:
+    #         try:
+    #             other = other / float(self.factor)
+    #             return Physical(
+    #                 other - self.value,
+    #                 self.dimensions,
+    #                 self.factor,
+    #                 self.precision,
+    #                 self.prefixed,
+    #             )
+    #         except:
+    #             raise ValueError(
+    #                 f"Cannot subtract between {self} and {other}: "
+    #                 + ".value attributes are incompatible."
+    #             )
 
     def __isub__(self, other):
         raise ValueError(
@@ -516,9 +629,9 @@ class Physical(object):
         )
 
     def __mul__(self, other):
-        if other != other:  # Test for nans
-            return other
-        elif isinstance(other, NUMBER):
+
+        # multiplying by a number e.g. 2 * si.m
+        if isinstance(other, NUMBER):
             return Physical(
                 self.value * other,
                 self.dimensions,
@@ -527,8 +640,9 @@ class Physical(object):
                 self.prefixed,
             )
 
+        # multiplying by another Physical instance, e.g. si.N * si.m
         elif isinstance(other, Physical):
-            new_dims = vec.add(self.dimensions, other.dimensions)
+            new_dims = Dimensions(*[x + y for x, y in zip(self.dimensions, other.dimensions)])
             new_power, new_dims_orig = phf._powers_of_derived(
                 new_dims, environment.units_by_dimension
             )
@@ -539,6 +653,7 @@ class Physical(object):
             # if not test_factor:
             #     print(new_factor)
             #     new_factor = 1
+
             try:
                 new_value = self.value * other.value
             except:
@@ -546,20 +661,64 @@ class Physical(object):
                     f"Cannot multiply between {self} and {other}: "
                     + ".value attributes are incompatible."
                 )
+
+            # if the result is dimensionless, the value is returned
             if new_dims == Dimensions(0, 0, 0, 0, 0, 0, 0):
                 return new_value
+
             else:
                 return Physical(new_value, new_dims, new_factor, self.precision)
         else:
-            try:
-                return Physical(
-                    self.value * other, self.dimensions, self.factor, self.precision
-                )
-            except:
-                raise ValueError(
-                    f"Cannot multiply between {self} and {other}: "
-                    + ".value attributes are incompatible."
-                )
+            raise ValueError(
+                f"Cannot multiply between {self} and {other}: "
+                + ". Only multiplication by a scalar or a Physical is allowed."
+            )
+
+    # def __mul__(self, other):
+    #     if other != other:  # Test for nans
+    #         return other
+    #     elif isinstance(other, NUMBER):
+    #         return Physical(
+    #             self.value * other,
+    #             self.dimensions,
+    #             self.factor,
+    #             self.precision,
+    #             self.prefixed,
+    #         )
+    #
+    #     elif isinstance(other, Physical):
+    #         new_dims = vec.add(self.dimensions, other.dimensions)
+    #         new_power, new_dims_orig = phf._powers_of_derived(
+    #             new_dims, environment.units_by_dimension
+    #         )
+    #         new_factor = self.factor * other.factor
+    #         test_factor = phf._get_units_by_factor(
+    #             new_factor, new_dims_orig, environment.units_by_factor, new_power
+    #         )
+    #         # if not test_factor:
+    #         #     print(new_factor)
+    #         #     new_factor = 1
+    #         try:
+    #             new_value = self.value * other.value
+    #         except:
+    #             raise ValueError(
+    #                 f"Cannot multiply between {self} and {other}: "
+    #                 + ".value attributes are incompatible."
+    #             )
+    #         if new_dims == Dimensions(0, 0, 0, 0, 0, 0, 0):
+    #             return new_value
+    #         else:
+    #             return Physical(new_value, new_dims, new_factor, self.precision)
+    #     else:
+    #         try:
+    #             return Physical(
+    #                 self.value * other, self.dimensions, self.factor, self.precision
+    #             )
+    #         except:
+    #             raise ValueError(
+    #                 f"Cannot multiply between {self} and {other}: "
+    #                 + ".value attributes are incompatible."
+    #             )
 
     def __imul__(self, other):
         raise ValueError(
@@ -571,9 +730,12 @@ class Physical(object):
         return self.__mul__(other)
 
     def __truediv__(self, other):
-        if other != other:  # Test for nans
-            return other
-        elif isinstance(other, NUMBER):
+
+        if other == 0:
+            raise ValueError("Cannot divide by zero.")
+
+        # division by a number e.g. 5 * si.m / 2 = 2.5 * si.m
+        if isinstance(other, NUMBER):
             return Physical(
                 self.value / other,
                 self.dimensions,
@@ -581,8 +743,10 @@ class Physical(object):
                 self.precision,
                 self.prefixed,
             )
+
+        # division by a Physical instance e.g. 5 * si.m / 2 * si.m = 2.5
         elif isinstance(other, Physical):
-            new_dims = vec.subtract(self.dimensions, other.dimensions)
+            new_dims = Dimensions(*[x - y for x, y in zip(self.dimensions, other.dimensions)])
             new_power, new_dims_orig = phf._powers_of_derived(
                 new_dims, environment.units_by_dimension
             )
@@ -591,6 +755,7 @@ class Physical(object):
             #     new_factor, new_dims_orig, environment.units_by_factor, new_power
             # ):
             #     new_factor = 1
+
             try:
                 new_value = self.value / other.value
             except:
@@ -598,40 +763,80 @@ class Physical(object):
                     f"Cannot divide between {self} and {other}: "
                     + ".value attributes are incompatible."
                 )
+
+            # the result is dimensionless
             if new_dims == Dimensions(0, 0, 0, 0, 0, 0, 0):
                 return new_value
             else:
                 return Physical(new_value, new_dims, new_factor, self.precision)
         else:
-            try:
-                return Physical(
-                    self.value / other, self.dimensions, self.factor, self.precision
-                )
-            except:
-                raise ValueError(
-                    f"Cannot divide between {self} and {other}: "
-                    + ".value attributes are incompatible."
-                )
+            raise ValueError(
+                f"Cannot divide between {self} and {other}: "
+                + ".Only division by a scalar or another Physical is allowed."
+            )
+
+    # def __truediv__(self, other):
+    #     if other != other:  # Test for nans
+    #         return other
+    #     elif isinstance(other, NUMBER):
+    #         return Physical(
+    #             self.value / other,
+    #             self.dimensions,
+    #             self.factor,
+    #             self.precision,
+    #             self.prefixed,
+    #         )
+    #     elif isinstance(other, Physical):
+    #         new_dims = vec.subtract(self.dimensions, other.dimensions)
+    #         new_power, new_dims_orig = phf._powers_of_derived(
+    #             new_dims, environment.units_by_dimension
+    #         )
+    #         new_factor = self.factor / other.factor
+    #         # if not phf._get_units_by_factor(
+    #         #     new_factor, new_dims_orig, environment.units_by_factor, new_power
+    #         # ):
+    #         #     new_factor = 1
+    #         try:
+    #             new_value = self.value / other.value
+    #         except:
+    #             raise ValueError(
+    #                 f"Cannot divide between {self} and {other}: "
+    #                 + ".value attributes are incompatible."
+    #             )
+    #         if new_dims == Dimensions(0, 0, 0, 0, 0, 0, 0):
+    #             return new_value
+    #         else:
+    #             return Physical(new_value, new_dims, new_factor, self.precision)
+    #     else:
+    #         try:
+    #             return Physical(
+    #                 self.value / other, self.dimensions, self.factor, self.precision
+    #             )
+    #         except:
+    #             raise ValueError(
+    #                 f"Cannot divide between {self} and {other}: "
+    #                 + ".value attributes are incompatible."
+    #             )
 
     def __rtruediv__(self, other):
-        if other != other:  # Test for nans
-            return other
+
         if isinstance(other, NUMBER):
             new_value = other / self.value
-            new_dimensions = vec.multiply(self.dimensions, -1)
-            new_factor = self.factor**-1  # added new_factor
+            new_dimensions = Dimensions(*[-x for x in self.dimensions])
+            new_factor = self.factor ** -1  # added new_factor
+
             return Physical(
                 new_value,
                 new_dimensions,
-                new_factor,  # updated from self.factor to new_factor
+                new_factor,
                 self.precision,
             )
         else:
             try:
                 return Physical(
                     other / self.value,
-                    vec.multiply(self.dimensions, -1),
-                    self.factor**-1,  # updated to ** -1
+                    Dimensions(*[-x for x in self.dimensions]),
+                    self.factor ** -1,  # updated to ** -1
                     self.precision,
                 )
             except:
@@ -640,6 +845,33 @@ class Physical(object):
                     + ".value attributes are incompatible."
                 )
 
+    # def __rtruediv__(self, other):
+    #     if other != other:  # Test for nans
+    #         return other
+    #     if isinstance(other, NUMBER):
+    #         new_value = other / self.value
+    #         new_dimensions = vec.multiply(self.dimensions, -1)
+    #         new_factor = self.factor**-1  # added new_factor
+    #         return Physical(
+    #             new_value,
+    #             new_dimensions,
+    #             new_factor,  # updated from self.factor to new_factor
+    #             self.precision,
+    #         )
+    #     else:
+    #         try:
+    #             return Physical(
+    #                 other / self.value,
+    #                 vec.multiply(self.dimensions, -1),
+    #                 self.factor**-1,  # updated to ** -1
+    #                 self.precision,
+    #             )
+    #         except:
+    #             raise ValueError(
+    #                 f"Cannot divide between {other} and {self}: "
+    #                 + ".value attributes are incompatible."
+    #             )
+
     def __itruediv__(self, other):
         raise ValueError(
             "Cannot incrementally divide Physical instances because they are immutable."
@@ -647,24 +879,38 @@ class Physical(object):
         )
 
     def __pow__(self, other):
-        if other != other:  # Test for nans
-            return other
+
         if isinstance(other, NUMBER):
             if self.prefixed:
                 return float(self) ** other
             new_value = self.value**other
-            new_dimensions = vec.multiply(self.dimensions, other)
+            new_dimensions = Dimensions(*[x * other for x in self.dimensions])
             new_factor = phf.fraction_pow(self.factor, other)
-            if new_dimensions == Dimensions(0, 0, 0, 0, 0, 0, 0):
-                return float(new_value * new_factor)
             return Physical(new_value, new_dimensions, new_factor, self.precision)
         else:
             raise ValueError(
-                "Cannot raise a Physical to the power of \
-                                     another Physical -> ({self}**{other})".format(
-                    self, other
-                )
+                "Cannot raise a Physical to the power of another Physical -> ({}**{})".format(self, other)
             )
+
+    # def __pow__(self, other):
+    #     if other != other:  # Test for nans
+    #         return other
+    #     if isinstance(other, NUMBER):
+    #         if self.prefixed:
+    #             return float(self) ** other
+    #         new_value = self.value**other
+    #         new_dimensions = vec.multiply(self.dimensions, other)
+    #         new_factor = phf.fraction_pow(self.factor, other)
+    #         if new_dimensions == Dimensions(0, 0, 0, 0, 0, 0, 0):
+    #             return float(new_value * new_factor)
+    #         return Physical(new_value, new_dimensions, new_factor, self.precision)
+    #     else:
+    #         raise ValueError(
+    #             "Cannot raise a Physical to the power of \
+    #                                  another Physical -> ({self}**{other})".format(
+    #                 self, other
+    #             )
+    #         )
 
 
 # The seven SI base units...

@@ -21,14 +21,14 @@
     "Symbol": "Ω"},
 "minute": {
     "Dimension": [0,0,1,0,0,0,0],
-    "Factor": "1/60",
+    "Factor": "0.016666666666666666",
     "Symbol": "minutes"},
 "hour": {
     "Dimension": [0,0,1,0,0,0,0],
-    "Factor": "1/3600",
+    "Factor": "2.7777777777777778e-4",
     "Symbol": "hours"},
 "day": {
     "Dimension": [0,0,1,0,0,0,0],
-    "Factor": "1/3600/24",
+    "Factor": "1.1574074074074073e-5",
     "Symbol": "days"}
 }

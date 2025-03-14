@@ -1,5 +1,5 @@
 #   Copyright 2020 Connor Ferster
-
+import pprint
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
 #    You may obtain a copy of the License at
@@ -83,6 +83,18 @@ class Environment:
             self.del_vars(old_units_dict, self.push_module)
 
         self.environment = self._load_environment(env_name)
+
+        # environment is a dict of unit definitions like:
+        # 'Pa': {'Dimension': Dimensions(kg=1, m=-1, s=-2, A=0, cd=0, K=0, mol=0),
+        #        'Factor': 1.0,
+        #        'Symbol': 'Pa'},
+        # 'W': {'Dimension': Dimensions(kg=1, m=2, s=-3, A=0, cd=0, K=0, mol=0),
+        #       'Factor': 1.0},
+        # 'bar': {'Dimension': Dimensions(kg=1, m=-1, s=-2, A=0, cd=0, K=0, mol=0),
+        #         'Factor': -4.0,
+        #         'Value': 100000.0},
+
+
         new_units_dict = self._generate_units_dict(
             self.environment, self._physical_class
         )
@@ -162,6 +174,7 @@ class Environment:
                 units_environment[unit]["Factor"] = evaluate_factor_expression(
                     factor_expr
                 )
+
         return units_environment
 
     @staticmethod

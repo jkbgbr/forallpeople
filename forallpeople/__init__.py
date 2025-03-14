@@ -39,7 +39,6 @@ import pprint
 from typing import Union, Optional
 from forallpeople.dimensions import Dimensions
 import forallpeople.physical_helper_functions as phf
-import forallpeople.tuplevector as vec
 from forallpeople.environment import Environment
 import math
 import builtins
@@ -466,6 +465,9 @@ class Physical(object):
 
     def __add__(self, other):
 
+        if other != other:  # Test for nans
+            return other
+
         # addition to 0 is allowed.
         # this will not cause any issues (e.g. no value change)
         # and allows using the sub() method.
@@ -541,6 +543,9 @@ class Physical(object):
         )
 
     def __sub__(self, other):
+
+        if other != other:  # Test for nans
+            return other
 
         # subtracting 0 is allowed.
         if isinstance(other, NUMBER) and other == 0:
@@ -629,6 +634,9 @@ class Physical(object):
         )
 
     def __mul__(self, other):
+
+        if other != other:  # Test for nans
+            return other
 
         # multiplying by a number e.g. 2 * si.m
         if isinstance(other, NUMBER):
@@ -731,6 +739,9 @@ class Physical(object):
 
     def __truediv__(self, other):
 
+        if other != other:  # Test for nans
+            return other
+
         if other == 0:
             raise ValueError("Cannot divide by zero.")
 
@@ -820,6 +831,9 @@ class Physical(object):
 
     def __rtruediv__(self, other):
 
+        if other != other:  # Test for nans
+            return other
+
         if isinstance(other, NUMBER):
             new_value = other / self.value
             new_dimensions = Dimensions(*[-x for x in self.dimensions])
@@ -880,12 +894,17 @@ class Physical(object):
 
     def __pow__(self, other):
 
+        if other != other:  # Test for nans
+            return other
+
         if isinstance(other, NUMBER):
             if self.prefixed:
                 return float(self) ** other
             new_value = self.value**other
             new_dimensions = Dimensions(*[x * other for x in self.dimensions])
             new_factor = phf.fraction_pow(self.factor, other)
+            if new_dimensions == Dimensions(0, 0, 0, 0, 0, 0, 0):
+                return float(new_value * new_factor)
             return Physical(new_value, new_dimensions, new_factor, self.precision)
         else:
             raise ValueError(

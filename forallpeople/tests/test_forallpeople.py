@@ -525,13 +525,6 @@ def test___pow__():
     assert ft**3 == si.Physical(
         0.3048**3, si.Dimensions(0, 3, 0, 0, 0, 0, 0), (1 / 0.3048) ** 3
     )
-
-    print(type(ft**0))
-    a = ft**0
-    print(a)
-    print(a.dimensions)
-    print(type(1.000))
-
     assert ft**0 == 1.000 and isinstance(ft**0, float)
     assert kN**0 == 1.000 and isinstance(kN**0, float)
 

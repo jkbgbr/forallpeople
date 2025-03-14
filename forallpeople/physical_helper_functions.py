@@ -19,7 +19,6 @@ import functools
 import math
 from typing import Any, Union, Optional, List, Callable
 from forallpeople.dimensions import Dimensions
-import forallpeople.tuplevector as vec
 
 
 ### Helper methods for repr methods ###
@@ -588,37 +587,37 @@ def is_nan(value: Any) -> bool:
         return False
 
 
-# def fraction_pow(a: float, b: float) -> Union[float, float]:
-#     """
-#     Raises 'a' to the power of 'b' with the intention of returning a float
-#     if the result can be expressed as a float. Returns a float otherwise.
-#     """
-#     if isinstance(b, int):
-#         return a**b
-#     else:
-#         c = a**b
-#         if isinstance(c, float):
-#             return 1 / c
-#         x, y = c.as_integer_ratio()
-#         d = Decimal(str(x / y))
-#         m, n = d.as_integer_ratio()
-#         return n / m
-
-
-from fractions import Fraction
-
-def fraction_pow(a: Fraction, b: Fraction) -> Union[Fraction, float]:
+def fraction_pow(a: float, b: float) -> Union[float, float]:
     """
-    Raises 'a' to the power of 'b' with the intention of returning a Fraction
-    if the result can be expressed as a Fraction. Returns a float otherwise.
+    Raises 'a' to the power of 'b' with the intention of returning a float
+    if the result can be expressed as a float. Returns a float otherwise.
     """
     if isinstance(b, int):
         return a**b
     else:
         c = a**b
-        if isinstance(c, Fraction):
+        if isinstance(c, float):
             return 1 / c
         x, y = c.as_integer_ratio()
         d = Decimal(str(x / y))
         m, n = d.as_integer_ratio()
-        return Fraction(n, m)
+        return n / m
+
+
+# from fractions import Fraction
+#
+# def fraction_pow(a: Fraction, b: Fraction) -> Union[Fraction, float]:
+#     """
+#     Raises 'a' to the power of 'b' with the intention of returning a Fraction
+#     if the result can be expressed as a Fraction. Returns a float otherwise.
+#     """
+#     if isinstance(b, int):
+#         return a**b
+#     else:
+#         c = a**b
+#         if isinstance(c, Fraction):
+#             return 1 / c
+#         x, y = c.as_integer_ratio()
+#         d = Decimal(str(x / y))
+#         m, n = d.as_integer_ratio()
+#         return Fraction(n, m)

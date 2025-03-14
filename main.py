@@ -1,16 +1,19 @@
 
 
 import forallpeople as si
+si.environment(env_name='structural', top_level=False)
 
-si.environment('structural2', top_level=False)
-
-si.mm = 0.001 * si.m
+# si.mm = 0.001 * si.m
 
 a = 1 * si.m
-a.to()
-a.to('mm')
+# a.to()
+# a.to('mm')
 
-print(a)
+b = 1 * si.km
+b.to()
+print(b)
+#
+# print(a)
 
 
 # si.environment('default', [top_level=False])

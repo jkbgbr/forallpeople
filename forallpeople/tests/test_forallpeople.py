@@ -11,7 +11,7 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-from fractions import Fraction
+
 import math
 import pytest
 import forallpeople as si
@@ -49,21 +49,21 @@ def test__evaluate_dims_and_factor():
     # (passes through without swap)
     assert func(
         si.Dimensions(1, 1, -2, 0, 0, 0, 0),
-        1 / Fraction("0.45359237") / Fraction("9.80665") / 1000,
+        1 / float("0.45359237") / float("9.80665") / 1000,
         1,
         env_fact,
         env_dims,
-    ) == ("kip", False, 1 / Fraction("0.45359237") / Fraction("9.80665") / 1000)
+    ) == ("kip", False, 1 / float("0.45359237") / float("9.80665") / 1000)
 
     # Defined unit with a default and the defined unit factor is not a match
     # (swapped)
     assert func(
         si.Dimensions(1, 1, -2, 0, 0, 0, 0),
-        1 / Fraction("0.45359237") / Fraction("9.80665") / 900,
+        1 / float("0.45359237") / float("9.80665") / 900,
         1,
         env_fact,
         env_dims,
-    ) == ("lb", False, 1 / Fraction("0.45359237") / Fraction("9.80665"))
+    ) == ("lb", False, 1 / float("0.45359237") / float("9.80665"))
 
     # Derived unit to a power
     assert func(si.Dimensions(1, 1, -2, 0, 0, 0, 0), 1, 2, env_fact, env_dims) == (
@@ -80,11 +80,11 @@ def test__evaluate_dims_and_factor():
     # Defined unit that is not a default unit
     assert func(
         si.Dimensions(0, 1, 0, 0, 0, 0, 0),
-        12 / Fraction("0.3048"),
+        12 / float("0.3048"),
         1,
         env_fact,
         env_dims,
-    ) == ("inch", False, 12 / Fraction("0.3048"))
+    ) == ("inch", False, 12 / float("0.3048"))
 
     # Single dimension base unit
     assert func(si.Dimensions(1, 0, 0, 0, 0, 0, 0), 1, 3, env_fact, env_dims) == (
@@ -108,7 +108,7 @@ def test__get_units_by_factor():
     assert func(ft.factor, ft.dimensions, env_fact, 1) == {
         "ft": {
             "Dimension": si.Dimensions(kg=0, m=1, s=0, A=0, cd=0, K=0, mol=0),
-            "Factor": Fraction(1) / Fraction("0.3048"),
+            "Factor": float(1) / float("0.3048"),
             "Symbol": "ft",
             "Default": True,
         }
@@ -117,7 +117,7 @@ def test__get_units_by_factor():
         "ft": {
             "Dimension": si.Dimensions(kg=0, m=1, s=0, A=0, cd=0, K=0, mol=0),
             "Symbol": "ft",
-            "Factor": Fraction(1) / Fraction("0.3048"),
+            "Factor": float(1) / float("0.3048"),
             "Default": True,
         }
     }
@@ -125,10 +125,10 @@ def test__get_units_by_factor():
         "lbft": {
             "Dimension": si.Dimensions(kg=1, m=2, s=-2, A=0, cd=0, K=0, mol=0),
             "Symbol": "lb·ft",
-            "Factor": Fraction(1)
-            / Fraction("0.45359237")
-            / Fraction("9.80665")
-            / Fraction("0.3048"),
+            "Factor": float(1)
+            / float("0.45359237")
+            / float("9.80665")
+            / float("0.3048"),
         }
     }
     assert func((ftlb * ft).factor, (ftlb * ft).dimensions, env_fact, 1) == dict()
@@ -234,7 +234,7 @@ def test_sqrt():
 
 def test_in_units():
     # assert ft.to('m').factor == 1
-    assert m.to("ft").factor == 1 / Fraction("0.3048")
+    assert m.to("ft").factor == 1 / float("0.3048")
     assert kip.to("lb").factor == (1000 * lb).factor
     assert ((10 * lb) ** 2).to("kip").factor == (0.1 * kip * kip).factor
 
@@ -270,7 +270,7 @@ def test__get_default_unit():
     assert func(si.Dimensions(0, 1, 0, 0, 0, 0, 0), env_dims) == {
         "ft": {
             "Dimension": si.Dimensions(kg=0, m=1, s=0, A=0, cd=0, K=0, mol=0),
-            "Factor": Fraction(1250, 381),
+            "Factor": 3.280839895013123,  # 1250 / 381,
             "Symbol": "ft",
             "Default": True,
         }
@@ -278,7 +278,7 @@ def test__get_default_unit():
     assert func(si.Dimensions(1, 1, -2, 0, 0, 0, 0), env_dims) == {
         "lb": {
             "Dimension": si.Dimensions(kg=1, m=1, s=-2, A=0, cd=0, K=0, mol=0),
-            "Factor": Fraction(2000000000000, 8896443230521),
+            "Factor": 2000000000000 / 8896443230521,
             "Symbol": "lb",
             "Default": True,
         }

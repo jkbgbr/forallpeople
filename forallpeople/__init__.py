@@ -35,7 +35,6 @@ from __future__ import annotations
 
 __version__ = "2.7.1"
 
-from fractions import Fraction
 from typing import Union, Optional
 from forallpeople.dimensions import Dimensions
 import forallpeople.physical_helper_functions as phf
@@ -175,7 +174,7 @@ class Physical(object):
             unit_match = defined_match or derived_match
             if not unit_match:
                 warnings.warn(f"No unit defined for '{unit_name}' on {self}.")
-            new_factor = unit_match.get("Factor", 1) ** Fraction(power)
+            new_factor = unit_match.get("Factor", 1) ** float(power)
             return Physical(self.value, self.dimensions, new_factor, self.precision)
 
     def si(self):

@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 from collections import ChainMap
-from fractions import Fraction
 from decimal import Decimal
 import functools
 import math
@@ -88,7 +87,7 @@ _superscripts = {
 @functools.lru_cache(maxsize=None)
 def _evaluate_dims_and_factor(
     dims_orig: Dimensions,
-    factor: Union[int, Fraction],
+    factor: Union[int, float],
     power: Union[int, float],
     env_fact: Callable,
     env_dims: Callable,
@@ -151,7 +150,7 @@ def _get_units_by_factor(
     equal to 'dims'. Returns an empty dict, otherwise.
     """
     ## TODO Write a pow() to handle fractions and rationals
-    new_factor = fraction_pow(factor, -Fraction(1 / power))
+    new_factor = fraction_pow(factor, -(1 / power))
     units_match = _match_factors(new_factor, units_env())
     try:
         units_name = tuple(units_match.keys())[0]
@@ -164,8 +163,8 @@ def _get_units_by_factor(
 
 
 def _match_factors(
-    new_factor: Fraction, units_env: dict, tol=Fraction(1, int(1e9))
-) -> Union[Fraction, dict]:
+    new_factor: float, units_env: dict, tol=1e-9
+) -> Union[float, dict]:
     """
     Returns
     """
@@ -565,18 +564,18 @@ def is_nan(value: Any) -> bool:
         return False
 
 
-def fraction_pow(a: Fraction, b: Fraction) -> Union[Fraction, float]:
+def fraction_pow(a: float, b: float) -> Union[float, float]:
     """
-    Raises 'a' to the power of 'b' with the intention of returning a Fraction
-    if the result can be expressed as a Fraction. Returns a float otherwise.
+    Raises 'a' to the power of 'b' with the intention of returning a float
+    if the result can be expressed as a float. Returns a float otherwise.
     """
     if isinstance(b, int):
         return a**b
     else:
         c = a**b
-        if isinstance(c, Fraction):
+        if isinstance(c, float):
             return 1 / c
         x, y = c.as_integer_ratio()
         d = Decimal(str(x / y))
         m, n = d.as_integer_ratio()
-        return Fraction(n, m)
+        return n / m
